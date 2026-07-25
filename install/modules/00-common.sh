@@ -403,12 +403,44 @@ install_package() {
 
 service_exists() {
 
+    local SERVICE="$1"
 
-    systemctl list-unit-files | grep -q "^$1"
+
+    if systemctl list-unit-files --type=service \
+        | grep -q "^${SERVICE}\.service"; then
+
+        return 0
+
+    fi
+
+
+    if systemctl status "$SERVICE" >/dev/null 2>&1; then
+
+        return 0
+
+    fi
+
+
+    return 1
 
 }
 
+is_service_active() {
 
+    local SERVICE="$1"
+
+
+    if systemctl is-active --quiet "$SERVICE"; then
+
+        return 0
+
+    else
+
+        return 1
+
+    fi
+
+}
 
 enable_service() {
 
@@ -530,7 +562,17 @@ backup_file() {
 
 
 }
+################################################################################
+# Directory Backup Helper
+################################################################################
 
+backup_directory() {
+
+    local DIR="$1"
+
+    
+
+}
 
 
 ################################################################################
