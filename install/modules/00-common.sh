@@ -3,40 +3,45 @@
 # ==============================================================================
 # NetCore Common Library
 # ==============================================================================
-# Shared helper functions used by every NetCore installer module.
+# Shared helper functions used by all NetCore installer modules.
+#
 # ==============================================================================
 
 set -Eeuo pipefail
 
 
 ################################################################################
-# Variables
-################################################################################
-
-################################################################################
-# Variables
+# Version
 ################################################################################
 
 readonly NETCORE_VERSION="0.1.0"
 
-#
-# Determine NetCore project root directory
-#
-NETCORE_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+
+################################################################################
+# Determine NetCore Root
+################################################################################
+
+if [[ -z "${NETCORE_ROOT:-}" ]]; then
+
+    NETCORE_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+
+fi
 
 export NETCORE_ROOT
 
 
-#
-# Logging
-#
-LOG_DIR="/var/log/netcore"
-LOG_FILE="${LOG_DIR}/install.log"
+################################################################################
+# Logging Variables
+################################################################################
+
+LOG_DIR=""
+LOG_FILE=""
 
 
-#
-# Runtime options
-#
+################################################################################
+# Options
+################################################################################
+
 VERBOSE=false
 DRY_RUN=false
 
@@ -49,6 +54,7 @@ RED="\033[0;31m"
 GREEN="\033[0;32m"
 YELLOW="\033[1;33m"
 BLUE="\033[0;34m"
+CYAN="\033[0;36m"
 NC="\033[0m"
 
 
@@ -58,83 +64,102 @@ NC="\033[0m"
 
 init_logging() {
 
+
     if [[ $EUID -eq 0 ]]; then
 
-        mkdir -p "$LOG_DIR"
-        touch "$LOG_FILE"
-        chmod 644 "$LOG_FILE"
+        LOG_DIR="/var/log/netcore"
 
     else
 
-        LOG_DIR="./logs"
-        LOG_FILE="${LOG_DIR}/install.log"
+        LOG_DIR="${NETCORE_ROOT}/logs"
+
+    fi
+
+
+    mkdir -p "$LOG_DIR"
+
+
+    LOG_FILE="${LOG_DIR}/install.log"
+
+
+    if ! touch "$LOG_FILE" 2>/dev/null; then
+
+        LOG_DIR="${NETCORE_ROOT}/logs"
 
         mkdir -p "$LOG_DIR"
+
+        LOG_FILE="${LOG_DIR}/install.log"
 
         touch "$LOG_FILE"
 
     fi
 
+
+    export LOG_DIR
+    export LOG_FILE
+
 }
 
 
 ################################################################################
-# Logging
+# Internal Logger
 ################################################################################
 
-log() {
+write_log() {
 
     local LEVEL="$1"
+
     shift
 
     local MESSAGE="$*"
 
     local TIME
 
-    TIME=$(date +"%Y-%m-%d %H:%M:%S")
-
-    echo "${TIME} [${LEVEL}] ${MESSAGE}" >> "$LOG_FILE"
+    TIME=$(date "+%Y-%m-%d %H:%M:%S")
 
 
-    case "$LEVEL" in
+    if [[ -n "${LOG_FILE:-}" ]]; then
 
-        INFO)
-            echo -e "${BLUE}[INFO]${NC} ${MESSAGE}"
-            ;;
+        echo "${TIME} [${LEVEL}] ${MESSAGE}" >> "${LOG_FILE}" 2>/dev/null || true
 
-        OK)
-            echo -e "${GREEN}[ OK ]${NC} ${MESSAGE}"
-            ;;
+    fi
 
-        WARN)
-            echo -e "${YELLOW}[WARN]${NC} ${MESSAGE}"
-            ;;
-
-        ERROR)
-            echo -e "${RED}[FAIL]${NC} ${MESSAGE}"
-            ;;
-
-    esac
 }
 
 
 log_info() {
-    log INFO "$@"
+
+    write_log "INFO" "$*"
+
+    echo -e "${BLUE}[INFO]${NC} $*"
+
 }
 
 
 log_success() {
-    log OK "$@"
+
+    write_log "OK" "$*"
+
+    echo -e "${GREEN}[ OK ]${NC} $*"
+
 }
 
 
 log_warn() {
-    log WARN "$@"
+
+    write_log "WARN" "$*"
+
+    echo -e "${YELLOW}[WARN]${NC} $*"
+
 }
 
 
 log_error() {
-    log ERROR "$@"
+
+    write_log "FAIL" "$*"
+
+    echo -e "${RED}[FAIL]${NC} $*" >&2
+
 }
 
 
@@ -151,47 +176,58 @@ cat <<EOF
                  Version ${NETCORE_VERSION}
 ======================================================
 
+NetCore Root:
+${NETCORE_ROOT}
+
 EOF
 
 }
 
 
 ################################################################################
-# Argument Parser
+# Argument Handling
 ################################################################################
 
 parse_args() {
 
-    while [[ $# -gt 0 ]]
-    do
+
+    while [[ $# -gt 0 ]]; do
+
 
         case "$1" in
 
+
             --verbose)
+
                 VERBOSE=true
+
                 ;;
+
 
             --dry-run)
+
                 DRY_RUN=true
+
                 ;;
 
-            --help)
-                echo "Usage:"
-                echo "  --verbose"
-                echo "  --dry-run"
-                exit 0
-                ;;
 
             *)
+
                 log_error "Unknown option: $1"
+
                 exit 1
+
                 ;;
+
 
         esac
 
+
         shift
 
+
     done
+
 }
 
 
@@ -201,13 +237,17 @@ parse_args() {
 
 require_root() {
 
+
     if [[ $EUID -ne 0 ]]; then
 
-        log_error "Run this installer as root."
+
+        log_error "This installer must be run as root."
 
         exit 1
 
+
     fi
+
 }
 
 
@@ -217,11 +257,13 @@ require_root() {
 
 check_os() {
 
+
     source /etc/os-release
 
-    if [[ "$ID" != "ubuntu" ]]; then
 
-        log_error "Unsupported OS: $ID"
+    if [[ "${ID}" != "ubuntu" ]]; then
+
+        log_error "Unsupported operating system: ${ID}"
 
         exit 1
 
@@ -229,6 +271,7 @@ check_os() {
 
 
     log_success "Ubuntu detected."
+
 }
 
 
@@ -238,25 +281,27 @@ check_os() {
 
 check_internet() {
 
-    log_info "Checking internet..."
 
-    if ping -c 2 1.1.1.1 >/dev/null 2>&1
-    then
+    log_info "Checking internet connectivity..."
 
-        log_success "Internet available."
+
+    if ping -c 2 1.1.1.1 >/dev/null 2>&1; then
+
+        log_success "Internet connection OK."
 
     else
 
-        log_error "No internet connection."
+        log_error "Internet connection failed."
 
         exit 1
 
     fi
+
 }
 
 
 ################################################################################
-# Command Check
+# Command Helpers
 ################################################################################
 
 command_exists() {
@@ -266,11 +311,9 @@ command_exists() {
 }
 
 
-################################################################################
-# Command Runner
-################################################################################
 
 run_command() {
+
 
     local DESCRIPTION="$1"
 
@@ -280,8 +323,7 @@ run_command() {
     log_info "$DESCRIPTION"
 
 
-    if $DRY_RUN
-    then
+    if [[ "$DRY_RUN" == true ]]; then
 
         log_warn "[DRY RUN] $*"
 
@@ -290,86 +332,205 @@ run_command() {
     fi
 
 
-    if $VERBOSE
-    then
+    if [[ -n "${LOG_FILE:-}" ]]; then
+
 
         "$@" 2>&1 | tee -a "$LOG_FILE"
 
+
     else
 
-        "$@" >> "$LOG_FILE" 2>&1
+
+        "$@"
+
 
     fi
 
 
-    local RESULT=$?
+    local RESULT=${PIPESTATUS[0]}
 
 
-    if [[ $RESULT -eq 0 ]]
-    then
+    if [[ $RESULT -ne 0 ]]; then
 
-        log_success "$DESCRIPTION"
 
-    else
+        log_error "Command failed: $*"
 
-        log_error "$DESCRIPTION failed"
+        return "$RESULT"
 
-        exit "$RESULT"
 
     fi
+
+
+    log_success "$DESCRIPTION"
 
 }
 
 
+
 ################################################################################
-# Package Helper
+# Package Helpers
 ################################################################################
 
 install_package() {
 
+
     local PACKAGE="$1"
 
 
-    if dpkg -s "$PACKAGE" >/dev/null 2>&1
-    then
+    if dpkg -s "$PACKAGE" >/dev/null 2>&1; then
+
 
         log_success "$PACKAGE already installed."
 
+
     else
+
 
         run_command \
         "Installing $PACKAGE" \
         apt-get install -y "$PACKAGE"
 
+
     fi
 
 }
+
 
 
 ################################################################################
 # Service Helpers
 ################################################################################
 
+service_exists() {
+
+
+    systemctl list-unit-files | grep -q "^$1"
+
+}
+
+
+
 enable_service() {
 
+
     local SERVICE="$1"
+
 
     run_command \
     "Enable $SERVICE" \
     systemctl enable --now "$SERVICE"
 
+
 }
+
 
 
 restart_service() {
 
+
     local SERVICE="$1"
+
 
     run_command \
     "Restart $SERVICE" \
     systemctl restart "$SERVICE"
 
+
 }
+
+
+
+################################################################################
+# Directory Helpers
+################################################################################
+
+create_directory() {
+
+
+    local DIR="$1"
+
+
+    if [[ -z "$DIR" ]]; then
+
+        log_error "create_directory requires a path."
+
+        return 1
+
+    fi
+
+
+    if [[ ! -d "$DIR" ]]; then
+
+
+        mkdir -p "$DIR"
+
+        log_success "Created directory: $DIR"
+
+
+    else
+
+
+        log_info "Directory already exists: $DIR"
+
+
+    fi
+
+}
+
+
+
+################################################################################
+# Backup Helpers
+################################################################################
+
+backup_file() {
+
+
+    local FILE="$1"
+
+
+    if [[ -z "$FILE" ]]; then
+
+
+        log_error "backup_file requires a file path."
+
+        return 1
+
+
+    fi
+
+
+
+    if [[ ! -e "$FILE" ]]; then
+
+
+        log_warn "File does not exist, skipping backup: $FILE"
+
+        return 0
+
+
+    fi
+
+
+
+    local BACKUP_FILE
+
+
+    BACKUP_FILE="${FILE}.netcore-backup-$(date +%Y%m%d-%H%M%S)"
+
+
+
+    cp -a "$FILE" "$BACKUP_FILE"
+
+
+
+    log_success "Backup created"
+
+    log_info "$BACKUP_FILE"
+
+
+}
+
 
 
 ################################################################################
@@ -378,15 +539,18 @@ restart_service() {
 
 step() {
 
-echo
 
-echo "------------------------------------------------------"
+    echo
 
-echo "$1"
+    echo "------------------------------------------------------"
 
-echo "------------------------------------------------------"
+    echo "$1"
+
+    echo "------------------------------------------------------"
+
 
 }
+
 
 
 ################################################################################
@@ -395,11 +559,14 @@ echo "------------------------------------------------------"
 
 cleanup() {
 
-    run_command \
-    "Cleaning packages" \
+
     apt-get autoremove -y
 
+    apt-get autoclean -y
+
+
 }
+
 
 
 ################################################################################
@@ -408,11 +575,15 @@ cleanup() {
 
 on_error() {
 
+
     local EXIT_CODE=$?
 
-    log_error "Installer failed with code $EXIT_CODE"
+
+    log_error "Installer failed with code ${EXIT_CODE}"
+
 
     exit "$EXIT_CODE"
+
 
 }
 
