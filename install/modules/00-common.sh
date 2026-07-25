@@ -573,7 +573,52 @@ backup_directory() {
     
 
 }
+################################################################################
+# Restore Backup Helper
+################################################################################
 
+restore_backup() {
+
+    local BACKUP="$1"
+
+    local DESTINATION="$2"
+
+
+    if [[ -z "$BACKUP" || -z "$DESTINATION" ]]; then
+
+        log_error "restore_backup requires backup file and destination."
+
+        return 1
+
+    fi
+
+
+    if [[ ! -e "$BACKUP" ]]; then
+
+        log_error "Backup file not found: $BACKUP"
+
+        return 1
+
+    fi
+
+
+    if [[ -e "$DESTINATION" ]]; then
+
+        backup_file "$DESTINATION"
+
+    fi
+
+
+    cp -a "$BACKUP" "$DESTINATION"
+
+
+    log_success "Backup restored"
+
+    log_info "Source: $BACKUP"
+
+    log_info "Destination: $DESTINATION"
+
+}
 
 ################################################################################
 # Step Display
