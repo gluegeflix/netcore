@@ -64,3 +64,34 @@ install_network_packages() {
     done
 
 }
+
+################################################################################
+# Create NetCore Directories
+################################################################################
+
+create_netcore_directories() {
+
+    step "Creating NetCore Directory Structure"
+
+    local DIRECTORIES=(
+        /opt/netcore
+        /opt/netcore/backups
+        /opt/netcore/scripts
+        /opt/netcore/downloads
+        /opt/netcore/logs
+        /opt/netcore/cache
+        /opt/netcore/temp
+        /opt/netcore/config
+    )
+
+    chmod 755 /opt/netcore
+
+    chmod -R 755 /opt/netcore
+
+    for DIR in "${DIRECTORIES[@]}"; do
+
+        create_directory "$DIR"
+
+    done
+
+}

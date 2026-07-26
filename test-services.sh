@@ -15,3 +15,5 @@ print_banner
 install_base_packages
 
 install_network_packages
+
+create_netcore_directories
