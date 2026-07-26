@@ -1,23 +1,25 @@
 #!/usr/bin/env bash
 
+
 source install/modules/00-common.sh
+
+source install/modules/00-config.sh
+
 
 parse_args "$@"
 
+
 init_logging
+
 
 print_banner
 
-echo "NetCore Root: $NETCORE_ROOT"
 
-log_info "Testing information log"
-log_success "Testing success log"
-log_warn "Testing warning log"
+echo "NetCore Root:"
+echo "$NETCORE_ROOT"
 
-check_os
-check_internet
 
-run_command "Testing command wrapper" sleep 3
+load_config
 
-echo
-echo "Test complete"
+
+show_config

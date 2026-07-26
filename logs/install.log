@@ -1,0 +1,92 @@
+2026-07-25 04:48:42 [INFO] Testing information log
+2026-07-25 04:48:42 [OK] Testing success log
+2026-07-25 04:48:42 [WARN] Testing warning log
+2026-07-25 04:48:42 [OK] Ubuntu detected.
+2026-07-25 04:48:42 [INFO] Checking internet...
+2026-07-25 04:48:43 [OK] Internet available.
+2026-07-25 04:48:43 [INFO] Testing command wrapper
+2026-07-25 04:48:46 [OK] Testing command wrapper
+2026-07-25 04:55:47 [INFO] Testing information log
+2026-07-25 04:55:47 [OK] Testing success log
+2026-07-25 04:55:47 [WARN] Testing warning log
+2026-07-25 04:55:47 [OK] Ubuntu detected.
+2026-07-25 04:55:47 [INFO] Checking internet...
+2026-07-25 04:55:48 [OK] Internet available.
+2026-07-25 04:55:48 [INFO] Testing command wrapper
+2026-07-25 04:55:51 [OK] Testing command wrapper
+2026-07-25 05:01:55 [OK] Loaded configuration:
+2026-07-25 05:01:55 [INFO] /home/vm/netcore/config/netcore.yml
+2026-07-25 05:07:41 [OK] Loaded configuration:
+2026-07-25 05:07:41 [INFO] /home/vm/netcore/config/netcore.yml
+2026-07-25 05:09:34 [OK] Loaded configuration:
+2026-07-25 05:09:34 [INFO] /home/vm/netcore/config/netcore.yml
+2026-07-25 05:10:12 [OK] Loaded configuration:
+2026-07-25 05:10:12 [INFO] /home/vm/netcore/config/netcore.yml
+2026-07-25 05:11:55 [OK] Loaded configuration:
+2026-07-25 05:11:55 [INFO] /home/vm/netcore/config/netcore.yml
+2026-07-25 05:12:23 [OK] Loaded configuration:
+2026-07-25 05:12:23 [INFO] /home/vm/netcore/config/netcore.yml
+2026-07-25 05:17:46 [OK] Loaded configuration:
+2026-07-25 05:17:46 [INFO] /home/vm/netcore/config/netcore.yml
+2026-07-25 05:23:20 [OK] Loaded configuration:
+2026-07-25 05:23:20 [INFO] /home/vm/netcore/config/netcore.yml
+2026-07-25 05:23:21 [ERROR] Installer failed with code 2
+2026-07-25 05:31:33 [OK] Loaded configuration:
+2026-07-25 05:31:33 [INFO] /home/vm/netcore/config/netcore.yml
+2026-07-25 06:47:59 [FAIL] Installer failed with code 127
+2026-07-25 07:00:29 [OK] Backup created
+2026-07-25 07:00:29 [INFO] /tmp/netcore-test.conf.netcore-backup-20260725-070029
+2026-07-25 07:07:15 [WARN] SSH service not found
+2026-07-25 07:07:17 [WARN] Fake service not found
+2026-07-25 07:11:25 [OK] SSH service exists
+2026-07-25 07:11:26 [WARN] Fake service not found
+2026-07-25 07:21:17 [OK] ssh is installed
+2026-07-25 07:21:17 [OK] ssh is running
+2026-07-25 07:21:59 [OK] ssh is installed
+2026-07-25 07:21:59 [OK] ssh is running
+2026-07-25 07:25:36 [OK] fail2ban is installed
+2026-07-25 07:25:36 [OK] fail2ban is running
+2026-07-25 07:26:10 [WARN] fail2ban is not installed
+2026-07-25 07:26:10 [WARN] fail2ban is stopped
+2026-07-25 07:26:29 [OK] fail2ban is installed
+2026-07-25 07:26:29 [OK] fail2ban is running
+2026-07-25 07:33:42 [FAIL] Installer failed with code 127
+2026-07-25 07:49:08 [OK] Backup created
+2026-07-25 07:49:08 [INFO] /tmp/netcore-test.conf.netcore-backup-20260725-074908
+2026-07-25 07:49:08 [INFO] Current file:
+2026-07-25 07:49:08 [OK] Backup created
+2026-07-25 07:49:08 [INFO] /tmp/netcore-test.conf.netcore-backup-20260725-074908
+2026-07-25 07:49:08 [OK] Backup restored
+2026-07-25 07:49:08 [INFO] Source: /tmp/netcore-test.conf.netcore-backup-20260725-074908
+2026-07-25 07:49:08 [INFO] Destination: /tmp/netcore-test.conf
+2026-07-25 07:49:08 [INFO] Restored file:
+2026-07-26 19:37:02 [OK] Backup created
+2026-07-26 19:37:02 [INFO] /tmp/netcore-test.conf.netcore-backup-20260726-193702
+2026-07-26 19:37:02 [INFO] Current file:
+2026-07-26 19:37:02 [OK] Backup created
+2026-07-26 19:37:02 [INFO] /tmp/netcore-test.conf.netcore-backup-20260726-193702
+2026-07-26 19:37:02 [OK] Backup restored
+2026-07-26 19:37:02 [INFO] Source: /tmp/netcore-test.conf.netcore-backup-20260726-193702
+2026-07-26 19:37:02 [INFO] Destination: /tmp/netcore-test.conf
+2026-07-26 19:37:02 [INFO] Restored file:
+2026-07-26 20:37:28 [OK] User confirmed.
+2026-07-26 20:37:42 [WARN] User declined.
+2026-07-26 20:37:54 [WARN] User declined.
+2026-07-26 20:40:11 [INFO] Auto-confirm enabled.
+2026-07-26 20:40:11 [OK] User confirmed.
+2026-07-26 20:51:03 [INFO] AUTO_YES enabled.
+2026-07-26 20:51:03 [OK] User confirmed.
+2026-07-26 20:51:13 [INFO] UNATTENDED mode: automatically confirmed.
+2026-07-26 20:51:13 [OK] User confirmed.
+2026-07-26 20:54:13 [OK] Configuration validated.
+2026-07-26 20:55:07 [FAIL] A required configuration value is missing.
+2026-07-26 20:55:07 [FAIL] Installer failed with code 1
+2026-07-26 20:59:22 [OK] Loaded configuration:
+2026-07-26 20:59:22 [INFO] /home/vm/netcore/config/netcore.yml
+2026-07-26 20:59:23 [OK] Backup created
+2026-07-26 20:59:23 [INFO] /tmp/netcore-test.conf.netcore-backup-20260726-205923
+2026-07-26 20:59:29 [OK] User confirmed.
+2026-07-26 20:59:31 [OK] SSH service exists
+2026-07-26 20:59:32 [WARN] Fake service not found
+2026-07-26 20:59:34 [OK] fail2ban is installed
+2026-07-26 20:59:34 [OK] fail2ban is running

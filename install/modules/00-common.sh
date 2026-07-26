@@ -44,7 +44,8 @@ LOG_FILE=""
 
 VERBOSE=false
 DRY_RUN=false
-
+AUTO_YES=false
+UNATTENDED=false
 
 ################################################################################
 # Colors
@@ -210,6 +211,16 @@ parse_args() {
 
                 ;;
 
+            --yes|-y)
+
+                AUTO_YES=true
+
+               ;;
+            --unattended)
+
+                UNATTENDED=true
+                AUTO_YES=true
+              ;;
 
             *)
 
@@ -638,8 +649,86 @@ step() {
 
 }
 
+################################################################################
+# Confirmation Helper
+################################################################################
 
+confirm_action() {
 
+    local PROMPT="${1:-Continue?}"
+
+    #
+    # Never prompt in unattended mode
+    #
+    if [[ "$UNATTENDED" == true ]]; then
+
+        log_info "UNATTENDED mode: automatically confirmed."
+
+        return 0
+
+    fi
+
+    #
+    # Skip prompts when --yes is used
+    #
+    if [[ "$AUTO_YES" == true ]]; then
+
+        log_info "AUTO_YES enabled."
+
+        return 0
+
+    fi
+
+    while true; do
+
+        read -rp "${PROMPT} [y/N]: " RESPONSE
+
+        case "${RESPONSE,,}" in
+
+            y|yes)
+
+                return 0
+                ;;
+
+            n|no|"")
+
+                return 1
+                ;;
+
+            *)
+
+                echo "Please answer yes or no."
+                ;;
+
+        esac
+
+    done
+
+}
+################################################################################
+# Require User Input
+################################################################################
+
+require_input() {
+
+    local VALUE="$1"
+    local MESSAGE="$2"
+
+    if [[ -n "$VALUE" ]]; then
+        return 0
+    fi
+
+    if [[ "$UNATTENDED" == true ]]; then
+
+        log_error "$MESSAGE"
+
+        return 1
+
+    fi
+
+    return 0
+
+}
 ################################################################################
 # Cleanup
 ################################################################################
