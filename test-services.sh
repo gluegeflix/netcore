@@ -19,3 +19,5 @@ install_network_packages
 create_netcore_directories
 
 check_core_services
+
+check_system_readiness
