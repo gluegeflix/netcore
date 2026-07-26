@@ -95,3 +95,63 @@ create_netcore_directories() {
     done
 
 }
+
+################################################################################
+# Service Health Checks
+################################################################################
+
+check_core_services() {
+
+    step "Checking Core Services"
+
+    local PASSED=0
+    local FAILED=0
+    local SERVICES=(
+        ssh
+        fail2ban
+        tailscaled
+        cockpit.socket
+    )
+
+
+    for SERVICE in "${SERVICES[@]}"; do
+
+
+        if service_exists "$SERVICE"; then
+
+
+            if is_service_active "$SERVICE"; then
+
+                log_success "$SERVICE is running"
+
+                PASSED=$((PASSED + 1))
+
+            else
+
+                log_warn "$SERVICE is installed but not running"
+
+                FAILED=$((FAILED + 1))
+
+            fi
+
+
+        else
+
+            log_warn "$SERVICE is not installed"
+
+            FAILED=$((FAILED + 1))
+
+        fi
+
+
+    done
+
+    echo
+
+    log_info "Service Check Summary"
+
+    log_info "Running: ${PASSED}"
+
+    log_info "Issues: ${FAILED}"
+
+}
