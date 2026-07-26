@@ -8,16 +8,10 @@ source install/modules/00-common.sh
 source install/modules/00-config.sh
 source install/modules/04-services.sh
 
+parse_args "$@"
+
 init_logging
 
 print_banner
 
-install_base_packages
-
-install_network_packages
-
-create_netcore_directories
-
-check_core_services
-
-check_system_readiness
+install_services

@@ -311,3 +311,94 @@ check_system_readiness() {
     log_info "Issues: ${FAILED}"
 
 }
+
+################################################################################
+# Module Runner
+################################################################################
+
+install_services() {
+
+    step "NetCore Services Module"
+
+    local ERRORS=0
+
+
+    #
+    # Install packages
+    #
+    if ! install_base_packages; then
+
+        log_error "Base package installation failed."
+
+        ERRORS=$((ERRORS + 1))
+
+    fi
+
+
+
+    #
+    # Install network tools
+    #
+    if ! install_network_packages; then
+
+        log_error "Network package installation failed."
+
+        ERRORS=$((ERRORS + 1))
+
+    fi
+
+
+
+    #
+    # Create directories
+    #
+    if ! create_netcore_directories; then
+
+        log_error "Directory creation failed."
+
+        ERRORS=$((ERRORS + 1))
+
+    fi
+
+
+
+    #
+    # Service checks
+    #
+    if ! check_core_services; then
+
+        log_warn "Service checks reported problems."
+
+    fi
+
+
+
+    #
+    # System readiness
+    #
+    if ! check_system_readiness; then
+
+        log_warn "System readiness reported problems."
+
+    fi
+
+
+
+    echo
+
+
+    if [[ "$ERRORS" -eq 0 ]]; then
+
+        log_success "04-services completed successfully."
+
+        return 0
+
+    else
+
+        log_error "04-services completed with errors."
+
+        return 1
+
+    fi
+
+}
