@@ -25,7 +25,7 @@ MODULE_NAME="System Preparation"
 # Update System
 ################################################################################
 
-system_update() {
+update_system_packages() {
 
     step "Updating Ubuntu packages"
 
@@ -209,7 +209,7 @@ configure_updates() {
 # Hardware Monitoring
 ################################################################################
 
-configure_hardware_monitoring() {
+configure_system_hardware_monitoring()
 
 
     step "Configuring hardware monitoring"
@@ -304,7 +304,7 @@ install_system() {
     check_internet
 
 
-    system_update
+    update_system_packages
 
 
     configure_hostname
@@ -315,7 +315,7 @@ install_system() {
 
     configure_updates
 
-    configure_hardware_monitoring
+    configure_system_hardware_monitoring
 
 
     system_summary
