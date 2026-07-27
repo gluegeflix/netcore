@@ -56,9 +56,18 @@ load_config() {
 
 config_get() {
 
-    local CONFIG_PATH="$1"
+    local KEY="$1"
 
-    yq ".$CONFIG_PATH" "$USER_CONFIG"
+    if [[ -z "$KEY" ]]; then
+
+        log_error "config_get requires a key."
+
+        return 1
+
+    fi
+
+
+    yq ".$KEY" "$USER_CONFIG" 2>/dev/null | tr -d '"'
 
 }
 

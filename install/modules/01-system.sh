@@ -85,34 +85,33 @@ configure_timezone() {
     step "Configuring timezone"
 
 
-    CURRENT_TIMEZONE=$(timedatectl show \
-        --property=Timezone \
-        --value)
+    if [[ -z "$TIMEZONE" ]]; then
 
+        log_error "Timezone not configured."
 
-    if [[ "$CURRENT_TIMEZONE" == "$TIMEZONE" ]]; then
-
-        log_success "Timezone already set: ${TIMEZONE}"
-
-    else
-
-        run_command \
-            "Setting timezone to ${TIMEZONE}" \
-            timedatectl set-timezone "$TIMEZONE"
+        return 1
 
     fi
 
-}
 
+    log_info "Setting timezone to ${TIMEZONE}"
+
+
+    timedatectl set-timezone "$TIMEZONE"
+
+
+    log_success "Timezone set to ${TIMEZONE}"
+
+}
 
 ################################################################################
 # Install Base Packages
 ################################################################################
 
-install_base_packages() {
+install_system_packages() {
 
 
-    step "Installing base packages"
+    step "install_system_packages"
 
 
     local PACKAGES=(
@@ -223,9 +222,15 @@ configure_hardware_monitoring() {
             sensors-detect \
             --auto
 
+        run_command \
+            "Testing sensor output" \
+            sensors
+
+        log_success "Hardware sensor detection completed."
+
     else
 
-        log_warn "lm-sensors unavailable."
+        log_warn "sensors-detect not available."
 
     fi
 
@@ -287,11 +292,12 @@ system_summary() {
 # Module Entry Point
 ################################################################################
 
-run_system_module() {
+install_system() {
+
+    step "Starting System Preparation"
 
 
-    log_info "Starting ${MODULE_NAME}"
-
+    require_root
 
     check_os
 
@@ -303,18 +309,11 @@ run_system_module() {
 
     configure_hostname
 
-
     configure_timezone
-
-
-    install_base_packages
-
 
     configure_time_sync
 
-
     configure_updates
-
 
     configure_hardware_monitoring
 
@@ -322,9 +321,6 @@ run_system_module() {
     system_summary
 
 
-    log_success "${MODULE_NAME} completed."
+    log_success "System Preparation completed."
 
 }
-
-
-run_system_module

@@ -312,6 +312,7 @@ check_system_readiness() {
 
 }
 
+
 ################################################################################
 # Module Runner
 ################################################################################
@@ -323,9 +324,6 @@ install_services() {
     local ERRORS=0
 
 
-    #
-    # Install packages
-    #
     if ! install_base_packages; then
 
         log_error "Base package installation failed."
@@ -335,10 +333,6 @@ install_services() {
     fi
 
 
-
-    #
-    # Install network tools
-    #
     if ! install_network_packages; then
 
         log_error "Network package installation failed."
@@ -348,10 +342,6 @@ install_services() {
     fi
 
 
-
-    #
-    # Create directories
-    #
     if ! create_netcore_directories; then
 
         log_error "Directory creation failed."
@@ -361,27 +351,18 @@ install_services() {
     fi
 
 
-
-    #
-    # Service checks
-    #
     if ! check_core_services; then
 
-        log_warn "Service checks reported problems."
+        log_warn "Core service checks reported issues."
 
     fi
 
 
-
-    #
-    # System readiness
-    #
     if ! check_system_readiness; then
 
-        log_warn "System readiness reported problems."
+        log_warn "System readiness checks reported issues."
 
     fi
-
 
 
     echo
@@ -389,13 +370,13 @@ install_services() {
 
     if [[ "$ERRORS" -eq 0 ]]; then
 
-        log_success "04-services completed successfully."
+        log_success "Services module completed successfully."
 
         return 0
 
     else
 
-        log_error "04-services completed with errors."
+        log_error "Services module completed with errors."
 
         return 1
 

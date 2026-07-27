@@ -307,11 +307,12 @@ security_summary() {
 # Module Entry Point
 ################################################################################
 
-run_security_module() {
+install_security() {
 
 
-    log_info "Starting ${MODULE_NAME}"
+    step "Starting Security Preparation"
 
+    require_root
 
     check_os
 
@@ -340,9 +341,9 @@ run_security_module() {
     security_summary
 
 
-    log_success "${MODULE_NAME} completed."
+    log_success "Security Preparation completed."
 
 }
 
 
-run_security_module
+

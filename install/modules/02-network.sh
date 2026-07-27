@@ -300,43 +300,24 @@ network_summary() {
 # Module Entry Point
 ################################################################################
 
-run_network_module() {
+install_network() {
 
+    step "Starting Network Preparation"
 
-    log_info "Starting ${MODULE_NAME}"
-
-
+    require_root
     check_os
-
     check_internet
-
 
     install_network_packages
 
-
-    validate_network_config
-
-
-    configure_hosts
-
-
+    validate_network_configuration
+    update_hosts_file
     enable_ip_forwarding
-
-
     test_gateway
+    test_dns
+    show_network_information
 
-
-    check_dns
-
-
-    show_current_network
-
-
-    network_summary
-
-
-    log_success "${MODULE_NAME} completed."
-
+    log_success "Network Preparation completed."
 }
 
 
