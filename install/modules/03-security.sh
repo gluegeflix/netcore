@@ -57,7 +57,7 @@ install_security_packages() {
 # Configure Firewall
 ################################################################################
 
-configure_firewall() {
+configure_security_firewall() {
 
     step "Configuring firewall"
 
@@ -74,6 +74,9 @@ configure_firewall() {
         "Enable firewall" \
         ufw --force enable
 
+    run_command \
+        "Reload firewall" \
+        ufw reload
 
     log_success "Firewall enabled."
 
@@ -84,7 +87,7 @@ configure_firewall() {
 # Configure Fail2Ban
 ################################################################################
 
-configure_fail2ban() {
+configure_security_fail2ban() {
 
     step "Configuring Fail2Ban"
 
@@ -134,6 +137,8 @@ EOF
 
     enable_service fail2ban
 
+    restart_service fail2ban
+
 }
 
 
@@ -141,7 +146,7 @@ EOF
 # Configure Automatic Security Updates
 ################################################################################
 
-configure_auto_updates() {
+configure_security_updates() {
 
     step "Configuring automatic security updates"
 
@@ -192,7 +197,7 @@ net.ipv4.conf.default.send_redirects=0
 EOF
 
 
-    run_command \
+    run_command_quiet \
         "Applying security sysctl settings" \
         sysctl --system
 
@@ -236,27 +241,21 @@ disable_unused_services() {
 
     step "Checking unnecessary services"
 
-
     local SERVICES=(
 
         avahi-daemon
-
         cups
 
     )
 
+    local SERVICE
 
-    for SERVICE in "${SERVICES[@]}"
-    do
+    for SERVICE in "${SERVICES[@]}"; do
 
-        if systemctl list-unit-files | grep -q "^${SERVICE}"; then
-
-
-            systemctl disable --now "$SERVICE" 2>/dev/null || true
-
-
-            log_success "Disabled ${SERVICE}"
-
+        if service_exists "$SERVICE"; then
+            disable_service "$SERVICE"
+        else
+            log_info "Service not installed, skipping: ${SERVICE}"
         fi
 
     done
@@ -310,7 +309,7 @@ security_summary() {
 install_security() {
 
 
-    step "Starting Security Preparation"
+    module_start "Security Preparation"
 
     require_root
 
@@ -320,13 +319,13 @@ install_security() {
     install_security_packages
 
 
-    configure_firewall
+    configure_security_firewall
 
 
-    configure_fail2ban
+    configure_security_fail2ban
 
 
-    configure_auto_updates
+    configure_security_updates
 
 
     configure_kernel_security
@@ -341,7 +340,7 @@ install_security() {
     security_summary
 
 
-    log_success "Security Preparation completed."
+    module_finish "Security Preparation"
 
 }
 

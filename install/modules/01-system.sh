@@ -29,14 +29,17 @@ update_system_packages() {
 
     step "Updating Ubuntu packages"
 
+    check_internet
 
-    run_command \
+    retry_command \
         "Updating package lists" \
+        3 \
+        10 \
         apt-get update
-
 
     run_command \
         "Upgrading installed packages" \
+        env DEBIAN_FRONTEND=noninteractive \
         apt-get upgrade -y
 
 }
@@ -111,7 +114,7 @@ configure_timezone() {
 install_system_packages() {
 
 
-    step "install_system_packages"
+    step "Installing system packages"
 
 
     local PACKAGES=(
@@ -209,29 +212,40 @@ configure_updates() {
 # Hardware Monitoring
 ################################################################################
 
-configure_system_hardware_monitoring()
-
+configure_system_hardware_monitoring() {
 
     step "Configuring hardware monitoring"
 
+    local STATE_DIR="/var/lib/netcore"
+    local SENSOR_MARKER="${STATE_DIR}/sensors-detected"
 
-    if command_exists sensors-detect; then
-
-        run_command \
-            "Detecting hardware sensors" \
-            sensors-detect \
-            --auto
-
-        run_command \
-            "Testing sensor output" \
-            sensors
-
-        log_success "Hardware sensor detection completed."
-
-    else
-
+    if ! command_exists sensors-detect; then
         log_warn "sensors-detect not available."
+        return 0
+    fi
 
+    create_directory "$STATE_DIR"
+
+    if [[ -f "$SENSOR_MARKER" && "$FORCE_SENSORS" != true ]]; then
+        log_success "Hardware sensors were already detected."
+        log_info "Use --force-sensors to run detection again."
+    else
+        run_command_quiet \
+            "Detecting hardware sensors" \
+            sensors-detect --auto
+
+        touch "$SENSOR_MARKER"
+        log_success "Hardware sensor detection completed."
+    fi
+
+    if command_exists sensors; then
+        run_command_quiet "Testing sensor output" sensors
+
+        echo
+        echo "Key temperature readings:"
+        sensors 2>/dev/null | awk '
+            /Package id 0:/ || /Core [0-9]+:/ || /CPUTIN:/ || /PCH_CHIP_TEMP:/ {print}
+        ' || true
     fi
 
 }
@@ -294,17 +308,16 @@ system_summary() {
 
 install_system() {
 
-    step "Starting System Preparation"
+    module_start "System Preparation"
 
 
     require_root
 
     check_os
 
-    check_internet
-
-
     update_system_packages
+
+    install_system_packages
 
 
     configure_hostname
@@ -321,6 +334,6 @@ install_system() {
     system_summary
 
 
-    log_success "System Preparation completed."
+    module_finish "System Preparation"
 
 }

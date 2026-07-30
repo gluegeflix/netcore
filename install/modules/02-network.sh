@@ -81,7 +81,7 @@ show_current_network() {
     echo
 
     echo "DNS:"
-    resolvectl status || true
+    SYSTEMD_PAGER=cat resolvectl status --no-pager || true
 
 }
 
@@ -117,14 +117,22 @@ validate_network_config() {
     log_info "Configured Subnet: ${SUBNET}"
 
 
-    if ip addr | grep -q "${IP}"; then
+    local ADDRESS
+    local IP_ACTIVE=false
 
+    while read -r ADDRESS; do
+
+        if [[ "${ADDRESS%/*}" == "$IP" ]]; then
+            IP_ACTIVE=true
+            break
+        fi
+
+    done < <(ip -4 -o addr show | awk '{print $4}')
+
+    if [[ "$IP_ACTIVE" == true ]]; then
         log_success "Configured IP is active."
-
     else
-
         log_warn "Configured IP is not currently assigned."
-
     fi
 
 }
@@ -134,66 +142,58 @@ validate_network_config() {
 # Configure Hosts File
 ################################################################################
 
-configure_hosts() {
-
+configure_network_hosts() {
 
     step "Updating hosts file"
 
-
     local HOSTNAME
-
     HOSTNAME=$(config_get hostname)
 
-
-    if grep -q "${HOSTNAME}" /etc/hosts; then
-
+    if grep -qw "$HOSTNAME" /etc/hosts; then
         log_success "Hostname already exists in hosts file."
-
-    else
-
-        run_command \
-            "Adding hostname entry" \
-            bash -c "echo '127.0.1.1 ${HOSTNAME}' >> /etc/hosts"
-
+        return 0
     fi
 
+    backup_file /etc/hosts /opt/netcore/backups
+
+    append_file /etc/hosts 644 root:root <<EOF
+127.0.1.1 ${HOSTNAME}
+EOF
+
 }
-
-
 ################################################################################
 # Enable IPv4 Forwarding
 ################################################################################
-
 enable_ip_forwarding() {
 
+    step "Enabling IP forwarding"
 
-    step "Enabling IPv4 forwarding"
+    backup_file \
+        /etc/sysctl.d/99-netcore.conf \
+        /opt/netcore/backups
 
-
-    cat >/etc/sysctl.d/99-netcore.conf <<EOF
+    write_file \
+        /etc/sysctl.d/99-netcore.conf \
+        644 \
+        root:root <<EOF
 # NetCore networking configuration
-
 net.ipv4.ip_forward=1
-
 net.ipv6.conf.all.forwarding=1
 EOF
-
 
     run_command \
         "Applying kernel network settings" \
         sysctl --system
 
-
     log_success "IP forwarding enabled."
 
 }
-
 
 ################################################################################
 # DNS Check
 ################################################################################
 
-check_dns() {
+check_network_dns() {
 
 
     step "Testing DNS"
@@ -302,23 +302,28 @@ network_summary() {
 
 install_network() {
 
-    step "Starting Network Preparation"
+    module_start "Network Preparation"
 
     require_root
+
     check_os
-    check_internet
 
     install_network_packages
 
-    validate_network_configuration
-    update_hosts_file
+    validate_network_config
+
+    configure_network_hosts
+
     enable_ip_forwarding
+
     test_gateway
-    test_dns
-    show_network_information
 
-    log_success "Network Preparation completed."
+    check_network_dns
+
+    show_current_network
+
+    network_summary
+
+    module_finish "Network Preparation"
+
 }
-
-
-run_network_module

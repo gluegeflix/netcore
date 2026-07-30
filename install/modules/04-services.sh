@@ -13,7 +13,7 @@ set -Eeuo pipefail
 # Install Base Packages
 ################################################################################
 
-install_base_packages() {
+install_service_packages() {
 
     step "Installing Base Utilities"
 
@@ -40,30 +40,6 @@ install_base_packages() {
 
 }
 
-################################################################################
-# Install Networking Packages
-################################################################################
-
-install_network_packages() {
-
-    step "Installing Networking Utilities"
-
-    local PACKAGES=(
-        dnsutils
-        net-tools
-        nfs-common
-        avahi-daemon
-        iputils-ping
-        traceroute
-    )
-
-    for PACKAGE in "${PACKAGES[@]}"; do
-
-        install_package "$PACKAGE"
-
-    done
-
-}
 
 ################################################################################
 # Create NetCore Directories
@@ -84,15 +60,13 @@ create_netcore_directories() {
         /opt/netcore/config
     )
 
-    chmod 755 /opt/netcore
-
-    chmod -R 755 /opt/netcore
-
     for DIR in "${DIRECTORIES[@]}"; do
 
         create_directory "$DIR"
 
     done
+
+    chmod -R 755 /opt/netcore
 
 }
 
@@ -166,6 +140,7 @@ check_system_readiness() {
 
     local PASSED=0
     local FAILED=0
+    local WARNINGS=0
 
 
     #
@@ -290,7 +265,7 @@ check_system_readiness() {
 
         log_warn "System reboot required"
 
-        FAILED=$((FAILED + 1))
+        WARNINGS=$((WARNINGS + 1))
 
     else
 
@@ -310,6 +285,8 @@ check_system_readiness() {
 
     log_info "Issues: ${FAILED}"
 
+    log_info "Warnings: ${WARNINGS}"
+
 }
 
 
@@ -319,12 +296,12 @@ check_system_readiness() {
 
 install_services() {
 
-    step "NetCore Services Module"
+    module_start "Services Preparation"
 
     local ERRORS=0
 
 
-    if ! install_base_packages; then
+    if ! install_service_packages; then
 
         log_error "Base package installation failed."
 
@@ -332,14 +309,6 @@ install_services() {
 
     fi
 
-
-    if ! install_network_packages; then
-
-        log_error "Network package installation failed."
-
-        ERRORS=$((ERRORS + 1))
-
-    fi
 
 
     if ! create_netcore_directories; then
@@ -370,7 +339,7 @@ install_services() {
 
     if [[ "$ERRORS" -eq 0 ]]; then
 
-        log_success "Services module completed successfully."
+        module_finish "Services Preparation"
 
         return 0
 

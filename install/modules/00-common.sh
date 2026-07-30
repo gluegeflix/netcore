@@ -1,3 +1,4 @@
+
 #!/usr/bin/env bash
 #
 # ==============================================================================
@@ -14,7 +15,7 @@ set -Eeuo pipefail
 # Version
 ################################################################################
 
-readonly NETCORE_VERSION="0.1.0"
+: "${NETCORE_VERSION:=0.1.0}"
 
 
 ################################################################################
@@ -28,6 +29,15 @@ if [[ -z "${NETCORE_ROOT:-}" ]]; then
 fi
 
 export NETCORE_ROOT
+
+
+
+################################################################################
+# Load Shared Libraries
+################################################################################
+
+# shellcheck source=/dev/null
+source "${NETCORE_ROOT}/install/libraries/load.sh"
 
 
 ################################################################################
@@ -46,6 +56,7 @@ VERBOSE=false
 DRY_RUN=false
 AUTO_YES=false
 UNATTENDED=false
+FORCE_SENSORS=false
 
 ################################################################################
 # Colors
@@ -63,126 +74,24 @@ NC="\033[0m"
 # Logging Initialization
 ################################################################################
 
-init_logging() {
 
-
-    if [[ $EUID -eq 0 ]]; then
-
-        LOG_DIR="/var/log/netcore"
-
-    else
-
-        LOG_DIR="${NETCORE_ROOT}/logs"
-
-    fi
-
-
-    mkdir -p "$LOG_DIR"
-
-
-    LOG_FILE="${LOG_DIR}/install.log"
-
-
-    if ! touch "$LOG_FILE" 2>/dev/null; then
-
-        LOG_DIR="${NETCORE_ROOT}/logs"
-
-        mkdir -p "$LOG_DIR"
-
-        LOG_FILE="${LOG_DIR}/install.log"
-
-        touch "$LOG_FILE"
-
-    fi
-
-
-    export LOG_DIR
-    export LOG_FILE
-
-}
 
 
 ################################################################################
 # Internal Logger
 ################################################################################
 
-write_log() {
-
-    local LEVEL="$1"
-
-    shift
-
-    local MESSAGE="$*"
-
-    local TIME
-
-    TIME=$(date "+%Y-%m-%d %H:%M:%S")
 
 
-    if [[ -n "${LOG_FILE:-}" ]]; then
-
-        echo "${TIME} [${LEVEL}] ${MESSAGE}" >> "${LOG_FILE}" 2>/dev/null || true
-
-    fi
-
-}
 
 
-log_info() {
-
-    write_log "INFO" "$*"
-
-    echo -e "${BLUE}[INFO]${NC} $*"
-
-}
-
-
-log_success() {
-
-    write_log "OK" "$*"
-
-    echo -e "${GREEN}[ OK ]${NC} $*"
-
-}
-
-
-log_warn() {
-
-    write_log "WARN" "$*"
-
-    echo -e "${YELLOW}[WARN]${NC} $*"
-
-}
-
-
-log_error() {
-
-    write_log "FAIL" "$*"
-
-    echo -e "${RED}[FAIL]${NC} $*" >&2
-
-}
 
 
 ################################################################################
 # Banner
 ################################################################################
 
-print_banner() {
 
-cat <<EOF
-
-======================================================
-              NetCore Installer
-                 Version ${NETCORE_VERSION}
-======================================================
-
-NetCore Root:
-${NETCORE_ROOT}
-
-EOF
-
-}
 
 
 ################################################################################
@@ -220,7 +129,12 @@ parse_args() {
 
                 UNATTENDED=true
                 AUTO_YES=true
-              ;;
+                ;;
+
+            --force-sensors)
+
+                FORCE_SENSORS=true
+                ;;
 
             *)
 
@@ -315,96 +229,82 @@ check_internet() {
 # Command Helpers
 ################################################################################
 
-command_exists() {
-
-    command -v "$1" >/dev/null 2>&1
-
-}
 
 
 
-run_command() {
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+################################################################################
+# Quiet Command Helper
+################################################################################
+
+run_command_quiet() {
 
     local DESCRIPTION="$1"
-
     shift
-
 
     log_info "$DESCRIPTION"
 
-
     if [[ "$DRY_RUN" == true ]]; then
-
         log_warn "[DRY RUN] $*"
-
         return 0
-
     fi
 
+    local TEMP_OUTPUT
+    TEMP_OUTPUT=$(mktemp)
 
-    if [[ -n "${LOG_FILE:-}" ]]; then
+    if "$@" >"$TEMP_OUTPUT" 2>&1; then
 
+        if [[ -n "${LOG_FILE:-}" ]]; then
+            cat "$TEMP_OUTPUT" >> "$LOG_FILE"
+        fi
 
-        "$@" 2>&1 | tee -a "$LOG_FILE"
+        if [[ "$VERBOSE" == true ]]; then
+            cat "$TEMP_OUTPUT"
+        fi
 
+        rm -f "$TEMP_OUTPUT"
+        log_success "$DESCRIPTION"
+        return 0
 
     else
 
+        local RESULT=$?
 
-        "$@"
+        if [[ -n "${LOG_FILE:-}" ]]; then
+            cat "$TEMP_OUTPUT" >> "$LOG_FILE"
+        fi
 
-
-    fi
-
-
-    local RESULT=${PIPESTATUS[0]}
-
-
-    if [[ $RESULT -ne 0 ]]; then
-
+        cat "$TEMP_OUTPUT" >&2
+        rm -f "$TEMP_OUTPUT"
 
         log_error "Command failed: $*"
-
         return "$RESULT"
-
 
     fi
 
-
-    log_success "$DESCRIPTION"
-
 }
-
 
 
 ################################################################################
 # Package Helpers
 ################################################################################
 
-install_package() {
 
-
-    local PACKAGE="$1"
-
-
-    if dpkg -s "$PACKAGE" >/dev/null 2>&1; then
-
-
-        log_success "$PACKAGE already installed."
-
-
-    else
-
-
-        run_command \
-        "Installing $PACKAGE" \
-        apt-get install -y "$PACKAGE"
-
-
-    fi
-
-}
 
 
 
@@ -412,74 +312,6 @@ install_package() {
 # Service Helpers
 ################################################################################
 
-service_exists() {
-
-    local SERVICE="$1"
-
-
-    if systemctl list-unit-files --type=service \
-        | grep -q "^${SERVICE}\.service"; then
-
-        return 0
-
-    fi
-
-
-    if systemctl status "$SERVICE" >/dev/null 2>&1; then
-
-        return 0
-
-    fi
-
-
-    return 1
-
-}
-
-is_service_active() {
-
-    local SERVICE="$1"
-
-
-    if systemctl is-active --quiet "$SERVICE"; then
-
-        return 0
-
-    else
-
-        return 1
-
-    fi
-
-}
-
-enable_service() {
-
-
-    local SERVICE="$1"
-
-
-    run_command \
-    "Enable $SERVICE" \
-    systemctl enable --now "$SERVICE"
-
-
-}
-
-
-
-restart_service() {
-
-
-    local SERVICE="$1"
-
-
-    run_command \
-    "Restart $SERVICE" \
-    systemctl restart "$SERVICE"
-
-
-}
 
 
 
@@ -487,38 +319,7 @@ restart_service() {
 # Directory Helpers
 ################################################################################
 
-create_directory() {
 
-
-    local DIR="$1"
-
-
-    if [[ -z "$DIR" ]]; then
-
-        log_error "create_directory requires a path."
-
-        return 1
-
-    fi
-
-
-    if [[ ! -d "$DIR" ]]; then
-
-
-        mkdir -p "$DIR"
-
-        log_success "Created directory: $DIR"
-
-
-    else
-
-
-        log_info "Directory already exists: $DIR"
-
-
-    fi
-
-}
 
 
 
@@ -526,128 +327,29 @@ create_directory() {
 # Backup Helpers
 ################################################################################
 
-backup_file() {
 
-
-    local FILE="$1"
-
-
-    if [[ -z "$FILE" ]]; then
-
-
-        log_error "backup_file requires a file path."
-
-        return 1
-
-
-    fi
-
-
-
-    if [[ ! -e "$FILE" ]]; then
-
-
-        log_warn "File does not exist, skipping backup: $FILE"
-
-        return 0
-
-
-    fi
-
-
-
-    local BACKUP_FILE
-
-
-    BACKUP_FILE="${FILE}.netcore-backup-$(date +%Y%m%d-%H%M%S)"
-
-
-
-    cp -a "$FILE" "$BACKUP_FILE"
-
-
-
-    log_success "Backup created"
-
-    log_info "$BACKUP_FILE"
-
-
-}
 ################################################################################
 # Directory Backup Helper
 ################################################################################
 
-backup_directory() {
 
-    local DIR="$1"
-
-    
-
-}
 ################################################################################
 # Restore Backup Helper
 ################################################################################
 
-restore_backup() {
 
-    local BACKUP="$1"
-
-    local DESTINATION="$2"
-
-
-    if [[ -z "$BACKUP" || -z "$DESTINATION" ]]; then
-
-        log_error "restore_backup requires backup file and destination."
-
-        return 1
-
-    fi
+################################################################################
+# Module Display Helpers
+################################################################################
 
 
-    if [[ ! -e "$BACKUP" ]]; then
 
-        log_error "Backup file not found: $BACKUP"
-
-        return 1
-
-    fi
-
-
-    if [[ -e "$DESTINATION" ]]; then
-
-        backup_file "$DESTINATION"
-
-    fi
-
-
-    cp -a "$BACKUP" "$DESTINATION"
-
-
-    log_success "Backup restored"
-
-    log_info "Source: $BACKUP"
-
-    log_info "Destination: $DESTINATION"
-
-}
 
 ################################################################################
 # Step Display
 ################################################################################
 
-step() {
 
-
-    echo
-
-    echo "------------------------------------------------------"
-
-    echo "$1"
-
-    echo "------------------------------------------------------"
-
-
-}
 
 ################################################################################
 # Confirmation Helper
